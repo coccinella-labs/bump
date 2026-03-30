@@ -1,0 +1,23 @@
+---
+# SPDX-License-Identifier: MIT
+
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lint tools
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install yamllint
+      - name: Validate YAML
+        run: yamllint action.yml .github/workflows/validate.yml
+      - name: Validate shell scripts
+        run: bash -n scripts/determine_bump_type.sh scripts/create_version_bump_pr.sh scripts/create_release.sh

@@ -1,0 +1,120 @@
+---
+name: Bump Version
+description: Create version bump PRs, tags, and releases from merged pull requests.
+
+inputs:
+  token:
+    description: GitHub token for API access.
+    required: true
+  pr-number:
+    description: Pull request number that triggered the version bump flow.
+    required: true
+  tag-prefix:
+    description: Prefix for tags and releases.
+    required: false
+    default: desktop/app
+  base-branch:
+    description: Default branch used for the version bump PR and release dispatch.
+    required: false
+    default: main
+  version-script:
+    description: Repository-local script used to bump version files.
+    required: false
+    default: ./scripts/version.sh
+  version-file:
+    description: Repository-local version file path.
+    required: false
+    default: VERSION
+  pubspec-file:
+    description: Repository-local pubspec file path to stage in the bump PR.
+    required: false
+    default: pubspec.yaml
+  whats-new-file:
+    description: Repository-local whats_new JSON file path to stage in the bump PR.
+    required: false
+    default: assets/whats_new.json
+  release-workflow:
+    description: Workflow filename or ID to dispatch after release creation.
+    required: false
+    default: release.yml
+  git-user-name:
+    description: Git username used for the automated version bump commit.
+    required: false
+    default: github-actions[bot]
+  git-user-email:
+    description: Git email used for the automated version bump commit.
+    required: false
+    default: 41898282+github-actions[bot]@users.noreply.github.com
+
+runs:
+  using: composite
+  steps:
+    - name: Determine bump type
+      id: bump-type
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+      run: |
+        "${{ github.action_path }}/scripts/determine_bump_type.sh"
+
+    - name: Bump version
+      if: steps.bump-type.outputs.bump-type != 'skip'
+      shell: bash
+      env:
+        TAG_PREFIX: ${{ inputs.tag-prefix }}
+      run: |
+        "${{ inputs.version-script }}" "${{ steps.bump-type.outputs.bump-type }}"
+
+    - name: Get version
+      id: version
+      shell: bash
+      env:
+        VERSION_FILE: ${{ inputs.version-file }}
+      run: |
+        VERSION=$(cut -d'+' -f1 "$VERSION_FILE" | xargs)
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+    - name: Create version bump PR
+      if: steps.bump-type.outputs.bump-type != 'skip'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        VERSION: ${{ steps.version.outputs.version }}
+        TAG_PREFIX: ${{ inputs.tag-prefix }}
+        BASE_BRANCH: ${{ inputs.base-branch }}
+        VERSION_FILE: ${{ inputs.version-file }}
+        PUBSPEC_FILE: ${{ inputs.pubspec-file }}
+        WHATS_NEW_FILE: ${{ inputs.whats-new-file }}
+        GIT_USER_NAME: ${{ inputs.git-user-name }}
+        GIT_USER_EMAIL: ${{ inputs.git-user-email }}
+      run: |
+        "${{ github.action_path }}/scripts/create_version_bump_pr.sh"
+
+    - name: Create and push tag if it does not exist on remote
+      if: steps.bump-type.outputs.bump-type == 'skip'
+      shell: bash
+      env:
+        TAG_PREFIX: ${{ inputs.tag-prefix }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        if git ls-remote --tags --exit-code origin "${TAG_PREFIX}-${VERSION}"; then
+          echo "Tag ${TAG_PREFIX}-${VERSION} already exists on remote. Skipping tag creation."
+        else
+          git tag "${TAG_PREFIX}-${VERSION}"
+          git push origin "${TAG_PREFIX}-${VERSION}"
+        fi
+
+    - name: Create release if not exists
+      if: steps.bump-type.outputs.bump-type == 'skip'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TAG_PREFIX: ${{ inputs.tag-prefix }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        VERSION: ${{ steps.version.outputs.version }}
+        BASE_BRANCH: ${{ inputs.base-branch }}
+        RELEASE_WORKFLOW: ${{ inputs.release-workflow }}
+      run: |
+        "${{ github.action_path }}/scripts/create_release.sh"
