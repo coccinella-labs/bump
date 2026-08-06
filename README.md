@@ -1,5 +1,7 @@
 # bump
 
+[![Release](https://img.shields.io/github/v/release/libnudget/bump?logo=github&label=latest)](https://github.com/libnudget/bump/releases)
+
 Reusable GitHub Action for version bump automation after merged pull requests.
 
 It is intended for repositories that already keep their versioning logic in repo-local files and scripts,
