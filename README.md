@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Coccinella-Labs/bump/main/.github/assets/thumbnail.png" alt="bump" width="100%">
+</p>
+
 # bump
 
 [![Release](https://img.shields.io/github/v/release/libnudget/bump?logo=github&label=latest)](https://github.com/libnudget/bump/releases)
