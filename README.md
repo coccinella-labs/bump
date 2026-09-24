@@ -4,7 +4,7 @@
 
 # bump
 
-[![Release](https://img.shields.io/github/v/release/libnudget/bump?logo=github&label=latest)](https://github.com/libnudget/bump/releases)
+[![Release](https://img.shields.io/github/v/release/coccinella-labs/bump?logo=github&label=latest)](https://github.com/coccinella-labs/bump/releases)
 
 Reusable GitHub Action for version bump automation after merged pull requests.
 
@@ -57,7 +57,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: libnudget/bump@main
+      - uses: coccinella-labs/bump@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ github.event.pull_request.number }}
